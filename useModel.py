@@ -50,5 +50,5 @@ if __name__=='__main__':
     paths = os.listdir(os.path.join(os.getcwd(), 'videos'))
     path = os.path.join(os.getcwd(), 'videos', 'elephant.mp4')
     path = os.path.join(os.getcwd(), 'videos', path)
-    model = 'elephant_model.pt'
+    model = 'elephant_model_epochs_20.pt'
     UseModel(model=model, video_path=path)

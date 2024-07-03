@@ -4,20 +4,19 @@ import numpy as np
 from ultralytics import YOLO
 import supervision as sv
 import shutil
+import argparse
 
 class TreatVideo:
-    def __init__(self, input_path, model, data=False, seg=False) -> None:
+    def __init__(self, input_path, model) -> None:
         self.path = input_path
         self.model = YOLO(model)
-        self.segment = seg
         self.bounding_box_annotator = sv.BoundingBoxAnnotator()
         self.mask_annotator = sv.MaskAnnotator(opacity=0.7)
         self.dict = self.model.names
         
         self.create_repo()
         self.read_video()
-        if data:
-            self.write_data()
+        self.write_data()
         
     def create_repo(self):
         main_folder = 'datas'
@@ -53,34 +52,19 @@ class TreatVideo:
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.dim = [width, height]
         self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
         n = 0
-        self.arr_img, self.arr_contours, self.arr_rois = [], [], []
+
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
-                image = frame.copy()
-                
-                frame, boxes, contours = self.get_predictions(frame)
-                if not self.segment and len(boxes) > 0:
-                    self.arr_img.append(image)
-                    self.arr_rois.append(boxes)
-                    
-                if self.segment and len(contours) > 0:
-                    self.arr_img.append(image)
-                    self.arr_contours.append(contours)
-                    
-                    
-                for box in boxes:
-                    x, y, w, h = box
-                    cv2.rectangle(frame, (x, y), (w, h), (0, 255, 0), 2)
-                cv2.drawContours(frame, contours, -1, (0, 0, 255), 2)
-                
+                frame = self.write_datas(frame, n)
                 cv2.imshow('', frame)
                 
                 key = cv2.waitKey(1)
                 if key == 27:
                     break
-                if n == self.total_frames - 1:
+                if n == self.total_frames - 5:
                     break
                 n+=1
         cap.release()
@@ -89,15 +73,10 @@ class TreatVideo:
     def get_predictions(self, frame):
         results = self.model(frame)[0]
         detections = sv.Detections.from_ultralytics(results)
-        
         annotated_frame =self.bounding_box_annotator.annotate(
         scene=frame.copy(),
         detections=detections
         ) 
-        annotated_frame = self.mask_annotator.annotate(
-        scene=frame.copy(),
-        detections=detections
-        )
         animals = ['bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe']
 
         animal_numbers = [key for key, value in self.dict.items() if value in animals]
@@ -108,27 +87,27 @@ class TreatVideo:
             if num in animal_numbers:
                 box = np.array(detect[0]).astype(int)
                 arr_box.append(box)
-                mask = detect[1]
-                if mask is not None:
-                    mask = np.array(mask*255).astype(np.uint8)
-                    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                    cv2.drawContours(frame, contours, -1, (0, 0, 255), 2)
-                    for cont in contours:
-                        arr_cont.append(cont)
-        return annotated_frame, arr_box, arr_cont
+        return annotated_frame, arr_box
     
+    def write_datas(self, frame, num):
+        directory = os.path.join(os.getcwd(), 'datas')
+        image, arr_box = self.get_predictions(frame)
+        print('box', len(arr_box))
+        if len(arr_box) > 0:
+            sub_direct = 'train'
+            if num > 0.7*self.total_frames and num < 0.85*self.total_frames:
+                sub_direct = 'test'
+            if num > 0.85*self.total_frames:
+                sub_direct = 'val'
+                
+            path = os.path.join(directory, sub_direct)
+            title = os.path.join(path, f'img_{num}.png')
+            cv2.imwrite(title, frame)
+            
+            title = os.path.join(path, f'img_{num}.txt')
+            self.write_roi(arr_box, title)
+        return image
         
-    def write_contours(self, contours, title):
-        w, h = self.dim
-        with open(title, 'w') as f:
-            for contour in contours:
-                line = '0'
-                for [p] in  contour:
-                    x, y = p[0]/w, p[1]/h
-                    x, y = round(x, 2), round(y, 2)
-                    line += f' {x} {y}'
-                line += '\n'
-                f.write(line)
             
     def write_roi(self, rois, title):
         w, h = self.dim
@@ -144,67 +123,15 @@ class TreatVideo:
                 line = f'0 {x} {y} {width} {height}\n'
                 f.write(line)
         
-    def write_data(self):
-        directory = os.path.join(os.getcwd(), 'datas')
-        d = int(0.7*len(self.arr_img))
-        f = int(0.95*len(self.arr_img))
-        
-        print('nb_img', len(self.arr_img), d, f)
-        path = os.path.join(directory, 'train')
-        images = self.arr_img[:d]
-        labels = self.arr_contours[:d]
-        if not self.segment:
-            labels = self.arr_rois[:d]
-        
-        for ind, (img, lab) in enumerate(zip(images, labels)):
-            title = f'{path}/img_{ind}.png'
-            cv2.imwrite(title, img)
-            title = f'{path}/img_{ind}.txt'
-            if self.segment:
-                self.write_contours(lab, title)
-            else:
-                self.write_roi(lab, title)
-                
-        path = os.path.join(directory, 'test')
-        images = self.arr_img[d:f]
-        labels = self.arr_contours[d:f]
-        if not self.segment:
-            labels = self.arr_rois[d:f]
-        for ind, (img, lab) in enumerate(zip(images, labels)):
-            title = f'{path}/img_{ind}.png'
-            cv2.imwrite(title, img)
-            title = f'{path}/img_{ind}.txt'
-            if self.segment:
-                self.write_contours(lab, title)
-            else:
-                self.write_roi(lab, title)
-                
-        path = os.path.join(directory, 'val')
-        images = self.arr_img[f:]
-        labels = self.arr_contours[f:]
-        if not self.segment:
-            labels = self.arr_rois[d:f]
-        for ind, (img, lab) in enumerate(zip(images, labels)):
-            title = f'{path}/img_{ind}.png'
-            cv2.imwrite(title, img)
-            title = f'{path}/img_{ind}.txt'
-            if self.segment:
-                self.write_contours(lab, title)
-            else:
-                self.write_roi(lab, title)
-                
-                
-            
-        
 
 
-    
-        
         
 if __name__=='__main__':
-    paths = os.listdir(os.path.join(os.getcwd(), 'videos'))
-    path = os.path.join(os.getcwd(), 'videos', 'elephant.mp4')
-    path = os.path.join(os.getcwd(), 'videos', path)
-    model = 'yolov8s.pt'
-    TreatVideo(input_path=path, model=model, data=True, seg=False)
+    parser = argparse.ArgumentParser(description='Traitement vidéo avec YOLO.')
+    parser.add_argument('input_path', type=str, help='Chemin de la vidéo à traiter')
+    parser.add_argument('model', type=str, help='Chemin du modèle YOLO')
+
+    args = parser.parse_args()
+
+    TreatVideo(input_path=args.input_path, model=args.model)
     

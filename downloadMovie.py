@@ -1,27 +1,36 @@
-import cv2
+import argparse
 from pytube import YouTube
 
-def download_youtube_video(video_url, output_path='.'):
-    try:
-        # Créer une instance YouTube avec l'URL de la vidéo
-        yt = YouTube(video_url)
+class YouTubeDownloader:
+    def __init__(self, video_url, output_path='.'):
+        self.video_url = video_url
+        self.output_path = output_path
 
-        # Obtenir le flux de la meilleure qualité
-        stream = yt.streams.get_highest_resolution()
+    def download_video(self):
+        try:
+            # Créer une instance YouTube avec l'URL de la vidéo
+            yt = YouTube(self.video_url)
 
-        # Télécharger la vidéo
-        print(f"Téléchargement de '{yt.title}' en cours...")
-        stream.download(output_path)
-        print(f"'{yt.title}' a été téléchargé avec succès dans '{output_path}'")
-    
-    except Exception as e:
-        print(f"Erreur lors du téléchargement : {e}")
+            # Obtenir le flux de la meilleure qualité
+            stream = yt.streams.get_highest_resolution()
 
-# URL de la vidéo YouTube que vous souhaitez télécharger
-video_url = 'https://www.youtube.com/watch?v=c0FtiZUO9Kg&pp=ygUec2FmYXJ5IHdpbGQgYW5pbWFscyBwbGFuZSB2aWV3'
+            # Télécharger la vidéo
+            print(f"Téléchargement de '{yt.title}' en cours...")
+            stream.download(self.output_path)
+            print(f"'{yt.title}' a été téléchargé avec succès dans '{self.output_path}'")
+        
+        except Exception as e:
+            print(f"Erreur lors du téléchargement : {e}")
 
-# Chemin de téléchargement (par défaut, le script téléchargera la vidéo dans le répertoire actuel)
-output_path = 'videos/safari.mp4'
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Télécharger une vidéo YouTube.')
+    parser.add_argument('video_url', type=str, help='URL de la vidéo YouTube à télécharger')
+    parser.add_argument('--output_path', type=str, default='/videos/elephant.mp4')
 
-# Appeler la fonction pour télécharger la vidéo
-download_youtube_video(video_url, output_path)
+    args = parser.parse_args()
+
+    # Créer une instance de la classe YouTubeDownloader
+    downloader = YouTubeDownloader(args.video_url, args.output_path)
+
+    # Appeler la méthode pour télécharger la vidéo
+    downloader.download_video()
