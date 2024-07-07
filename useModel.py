@@ -21,7 +21,7 @@ class UseModel:
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
-                frame = self.get_predictions(frame)
+                frame = self.get_annoneted_img(frame)
                 cv2.imshow('', frame)
                 
                 key = cv2.waitKey(1)
@@ -33,14 +33,27 @@ class UseModel:
         cap.release()
         cv2.destroyAllWindows()
         
-    def get_predictions(self, frame):
+    def get_annoneted_img(self, frame):
         results = self.model(frame)[0]
         detections = sv.Detections.from_ultralytics(results)
+        
+        labels = [
+            f"{class_name} {confidence:.2f}"
+            for class_name, confidence
+            in zip(detections['class_name'], detections.confidence)
+        ]
+        
+        
+        annotated_frame =self.label_annotator.annotate(  # type: ignore
+        scene=frame.copy(), detections=detections, labels=labels
+        )
+        
         annotated_frame =self.bounding_box_annotator.annotate(
-        scene=frame.copy(),
+        scene=annotated_frame.copy(),
         detections=detections
         ) 
         return annotated_frame
+
 
 
         
@@ -50,5 +63,5 @@ if __name__=='__main__':
     paths = os.listdir(os.path.join(os.getcwd(), 'videos'))
     path = os.path.join(os.getcwd(), 'videos', 'elephant.mp4')
     path = os.path.join(os.getcwd(), 'videos', path)
-    model = 'elephant_model_epochs_20.pt'
+    model = 'elephant_model_epochs_3.pt'
     UseModel(model=model, video_path=path)

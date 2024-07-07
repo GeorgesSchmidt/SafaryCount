@@ -4,19 +4,34 @@ import numpy as np
 from ultralytics import YOLO
 import supervision as sv
 import shutil
+import uuid
 import argparse
+from tqdm import tqdm
+
 
 class TreatVideo:
     def __init__(self, input_path, model) -> None:
         self.path = input_path
         self.model = YOLO(model)
         self.bounding_box_annotator = sv.BoundingBoxAnnotator()
+        self.label_annotator = sv.LabelAnnotator()
         self.mask_annotator = sv.MaskAnnotator(opacity=0.7)
         self.dict = self.model.names
         
         self.create_repo()
-        self.read_video()
-        self.write_data()
+        
+        path_no = os.path.join(os.getcwd(), 'videos', 'no_elephant_1.mp4')
+        self.elephant = False
+        print('no elephant')
+        self.treat_video(path_no)
+        
+        path_yes = os.path.join(os.getcwd(), 'videos', 'elephant_1.mp4')
+        self.elephant = True
+        print('with elephant')
+        self.treat_video(path_yes)
+        
+        self.check_datas()
+        
         
     def create_repo(self):
         main_folder = 'datas'
@@ -46,92 +61,150 @@ class TreatVideo:
                 print(f'Erreur lors de la suppression {file_path}. Raison: {e}')
 
         
-    def read_video(self):
-        cap = cv2.VideoCapture(self.path)
+    def treat_video(self, path):
+        cap = cv2.VideoCapture(path)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.dim = [width, height]
         self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
-        n = 0
-
-        while cap.isOpened():
+        self.total_frames -= 1
+        pbar = tqdm(total=self.total_frames, desc="Traitement des frames")
+        arr_count = 0
+        for i in range(self.total_frames):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, i)
             ret, frame = cap.read()
             if ret:
-                frame = self.write_datas(frame, n)
-                cv2.imshow('', frame)
+                self.write_datas(frame, i)
+                boxes = self.get_predictions(frame)
+                if len(boxes) > 0:
+                    arr_count += 1
+                # for box in boxes:
+                #     x, y, w, h = box
+                #     cv2.rectangle(frame, (x, y), (w, h), (0, 255, 0), 2)
+                    
+                # p = [10, 20]
+                # texte = 'no detections'
                 
-                key = cv2.waitKey(1)
-                if key == 27:
-                    break
-                if n == self.total_frames - 5:
-                    break
-                n+=1
+                # if len(boxes) > 0:
+                #     texte = f'{len(boxes)} detections'
+                
+                # self.put_texte(frame, texte, p)
+                # title = f'image {i}'
+                # cv2.imshow(title, frame)
+                # key = cv2.waitKey(1)
+                # if key == 27:
+                #     break
+                
+            pbar.update(1)
+                
         cap.release()
-        cv2.destroyAllWindows()
+        pbar.close()
+    
+        print('result ', arr_count, ' / ', self.total_frames)
+       
+                
+    def put_texte(self, frame, texte, p):
+        font = 1
+        font_scale = 1.0
+        color = (0, 0, 0)
+        thick = 3
+        cv2.putText(frame, texte, p, font, font_scale, color, thick)
         
+        
+        
+    
     def get_predictions(self, frame):
-        results = self.model(frame)[0]
+        results = self.model(frame, verbose=False)[0]
         detections = sv.Detections.from_ultralytics(results)
-        annotated_frame =self.bounding_box_annotator.annotate(
-        scene=frame.copy(),
-        detections=detections
-        ) 
+        
+        
         animals = ['bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe']
 
         animal_numbers = [key for key, value in self.dict.items() if value in animals]
         
-        arr_box, arr_cont = [], []
+        res = []
         for detect in detections:
             num = int(detect[3])
+            box = np.array(detect[0]).astype(int)
             if num in animal_numbers:
-                box = np.array(detect[0]).astype(int)
-                arr_box.append(box)
-        return annotated_frame, arr_box
+                res.append(box)
+        return res
     
     def write_datas(self, frame, num):
         directory = os.path.join(os.getcwd(), 'datas')
-        image, arr_box = self.get_predictions(frame)
-        print('box', len(arr_box))
-        if len(arr_box) > 0:
+        
+        sub_direct = ''
+        if num <= 0.7*self.total_frames:
             sub_direct = 'train'
-            if num > 0.7*self.total_frames and num < 0.85*self.total_frames:
-                sub_direct = 'test'
-            if num > 0.85*self.total_frames:
-                sub_direct = 'val'
-                
-            path = os.path.join(directory, sub_direct)
-            title = os.path.join(path, f'img_{num}.png')
-            cv2.imwrite(title, frame)
-            
-            title = os.path.join(path, f'img_{num}.txt')
-            self.write_roi(arr_box, title)
-        return image
-        
-            
-    def write_roi(self, rois, title):
-        w, h = self.dim
-        with open(title, 'w') as f:
-            for roi in rois:
-                x0, y0, x1, y1 = roi
-                x, y = np.mean([x0, x1]), np.mean([y0, y1])
-                x /= w
-                y /= h
-                width = (x1-x0)/w
-                height = (y1-y0)/h
-                x, y, width, height = round(x, 2), round(y, 2), round(width, 2), round(height, 2)
-                line = f'0 {x} {y} {width} {height}\n'
-                f.write(line)
-        
+        if num > 0.7*self.total_frames and num < 0.85*self.total_frames:
+            sub_direct = 'test'
+        if num > 0.85*self.total_frames:
+            sub_direct = 'val'
 
+
+        path = os.path.join(directory, sub_direct)
+        t = uuid.uuid4().hex[:6]
+       
+        title = os.path.join(path, f'elephant_{t}.png')
+        if not self.elephant:
+            title = os.path.join(path, f'no_elephant_{t}.png')
+        cv2.imwrite(title, frame)
+
+        title = os.path.join(path, f'elephant_{t}.txt')
+        if not self.elephant:
+            title = os.path.join(path, f'no_elephant_{t}.txt')
+
+        lines = []
+        if self.elephant:
+            pred = self.get_predictions(frame)
+            height, width = frame.shape[:2]
+            for box in pred:
+                x0, y0, x1, y1 = box
+                c_x = np.mean([x0, x1])/width
+                c_y = np.mean([y0, y1])/height
+                w = (x1-x0)/width
+                h = (y1-y0)/height
+                c_x, c_y = round(c_x, 2), round(c_y, 2)
+                w, h = round(w, 2), round(h, 2)
+                line = f'0 {c_x} {c_y} {w} {h}\n'
+                lines.append(line)
+            
+        with open(title, 'w') as f:
+            for line in lines:
+                f.write(line)
+                
+    def check_datas(self):
+        directory = os.path.join(os.getcwd(), 'datas')
+        sub_dir = os.listdir(directory)
+        n = 0
+        nb = 0
+        print(sub_dir)
+        for dir in sub_dir:
+            paths = os.listdir(os.path.join(directory, dir))
+            for path in paths:
+                if 'no_elephant' in path:
+                    nb += 1
+                else:
+                    n += 1
+        print("datas")
+        print(f'{n} images with {n} labels with elephants')
+        print(f'{nb} images with {nb} labels with no elephants')
+                
+        
+                
+            
+ 
 
         
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(description='Traitement vidéo avec YOLO.')
-    parser.add_argument('input_path', type=str, help='Chemin de la vidéo à traiter')
-    parser.add_argument('model', type=str, help='Chemin du modèle YOLO')
+    # parser = argparse.ArgumentParser(description='Traitement vidéo avec YOLO.')
+    # parser.add_argument('input_path', type=str, help='Chemin de la vidéo à traiter')
+    # parser.add_argument('model', type=str, help='Chemin du modèle YOLO')
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
-    TreatVideo(input_path=args.input_path, model=args.model)
+    #TreatVideo(input_path=args.input_path, model=args.model)
+    path = 'videos/elephant.mp4'
+    model = 'yolov8s.pt'
+    TreatVideo(input_path=path, model=model)
     

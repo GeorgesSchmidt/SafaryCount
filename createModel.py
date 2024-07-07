@@ -5,8 +5,9 @@ from ultralytics import YOLO
 import shutil
 import argparse
 
+
 class TrainModel:
-    def __init__(self, model, epochs=10) -> None:
+    def __init__(self, model, epochs=3) -> None:
         self.model = YOLO(model)
         self.create_yaml()
         self.deep_learning(epochs=epochs)
@@ -32,20 +33,21 @@ class TrainModel:
 
         print('data.yaml created')
         
-    def deep_learning(self, epochs=20, datas='data.yaml'):
+    def deep_learning(self, epochs=5, datas='data.yaml'):
         results = self.model.train(data=datas, epochs=epochs, imgsz=320)
         result_dir = results.save_dir
         path = os.path.join(os.getcwd(), result_dir) + '/weights/best.pt'
-        title = os.getcwd() + f'/elephant_model_epochs_{epochs}.pt'
+        title = os.getcwd() + f'/elephant_epochs_{epochs}.pt'
         shutil.move(path, title)
     
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(description='Creation model elephant')
-    parser.add_argument('--model', type=str, default=os.path.join(os.getcwd(), 'yolov8s.pt'),
-                        help='Path to the model file')
-    parser.add_argument('--epochs', type=int, default=10,
-                        help='Number of epochs to train the model')
+    # parser = argparse.ArgumentParser(description='Creation model elephant')
+    # parser.add_argument('--model', type=str, default=os.path.join(os.getcwd(), 'yolov8s.pt'),
+    #                     help='Path to the model file')
+    # parser.add_argument('--epochs', type=int, default=10,
+    #                     help='Number of epochs to train the model')
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
-    TrainModel(model=args.model, epochs=args.epochs)
+    #TrainModel(model=args.model, epochs=args.epochs)
+    TrainModel(model='yolov8s.pt')

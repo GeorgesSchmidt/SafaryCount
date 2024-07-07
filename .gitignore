@@ -3,4 +3,5 @@
 datas/
 runs/
 *.yaml
-
+*.log
+safari.mp4
