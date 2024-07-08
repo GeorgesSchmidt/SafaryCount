@@ -9,8 +9,20 @@ import argparse
 class TrainModel:
     def __init__(self, model, epochs=10) -> None:
         self.model = YOLO(model)
+        self.create_repo()
         self.create_yaml()
         self.deep_learning(epochs=epochs)
+        
+        
+    def create_repo(self):
+        main_folder = 'weights'
+
+
+        # Créer le dossier principal s'il n'existe pas
+        if not os.path.exists(main_folder):
+            os.makedirs(main_folder)
+
+            
         
     def create_yaml(self):
         train_path = os.path.join(os.getcwd(), 'datas/train')
@@ -37,8 +49,10 @@ class TrainModel:
         results = self.model.train(data=datas, epochs=epochs, imgsz=320)
         result_dir = results.save_dir
         path = os.path.join(os.getcwd(), result_dir) + '/weights/best.pt'
-        title = os.getcwd() + f'/elephant_epochs_retrained_10_{epochs}.pt'
+        title = os.getcwd() + f'/weights/elephant_epochs_retrained_10_{epochs}.pt'
         shutil.move(path, title)
+        path = os.path.join(os.getcwd(), result_dir) + '/confusion_matrix.png'
+        title = os.getcwd() + f'/results/confusion_matrix_elephant_epochs_retrained_10_{epochs}.png'
     
 if __name__=='__main__':
     # parser = argparse.ArgumentParser(description='Creation model elephant')
@@ -50,4 +64,4 @@ if __name__=='__main__':
     # args = parser.parse_args()
 
     #TrainModel(model=args.model, epochs=args.epochs)
-    TrainModel(model='elephant_epochs_10.pt')
+    TrainModel(model='weights/elephant_epochs_10.pt')
