@@ -214,9 +214,24 @@ Ce module prend en entrée le nouveau modèle d'IA pour l'appliquer sur le film 
 
 Le module utilisé ici est supervision afin d'utiliser ses options tels que l'affichage labelisé et le tracking, permettant de suivre chaque animal d'une séquence donnée. 
 
+![Elephants Image](./pictures/resultat_model.png)
+
 Cette fois, l'input est le fim en entier (contenant des séquences avec et sans éléphants) ainsi que le nouveau modèle crée. 
 
 On constate déjà une nette amélioration avec une détection exacte des éléphants (ils ne sont plus confondus avec d'autres animaux) et aucune détection sur les séquences où il n'y a pas d'animaux. 
+
+Le compte rendu du modèle se présente de la manière suivante :
+
+total number of images : 10
+nb of sequences with no elephants : [8, 9]
+number of elephants detected  8
+elephant n° 0 : image 1 - image 9
+elephant n° 1 : image 1 - image 9
+elephant n° 2 : image 1 - image 9
+elephant n° 3 : image 1 - image 9
+elephant n° 4 : image 1 - image 9
+elephant n° 5 : image 1 - image 9
+elephant n° 6 : image 1 - image 9
 
 
 

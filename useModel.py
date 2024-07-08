@@ -13,6 +13,7 @@ class UseModel:
         self.label_annotator = sv.LabelAnnotator()
         self.tracker = sv.ByteTrack()
         self.read_video()
+        self.get_results()
         
     def read_video(self):
         cap = cv2.VideoCapture(self.path)
@@ -21,9 +22,12 @@ class UseModel:
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.dim = [width, height]
         self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        self.total_frames -= 1
         self.detects = [0]*self.total_frames
         
         tracker = MultiObjectTracker(dt=1 / cap_fps, tracker_kwargs={'max_staleness': 10})
+        self.result_track = {}
         id_dict = {}
         j = 0
         n = 0
@@ -42,7 +46,9 @@ class UseModel:
                 tracker.step(detections=detect)
                 track_results = tracker.active_tracks()
                 id_dict, j = self.update_id_dict(id_dict, j, track_results)
-                self.show_result(frame, track_results, id_dict)
+                self.show_result(frame, track_results, id_dict, num_img=i)
+                
+                
                 cv2.imshow('', frame)
                 
                 key = cv2.waitKey(1)
@@ -52,7 +58,7 @@ class UseModel:
         cap.release()
         cv2.destroyAllWindows()
         
-    def show_result(self, frame, track_results, id_dict):
+    def show_result(self, frame, track_results, id_dict, num_img):
         colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (255, 0, 255), (128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 128, 0), (0, 128, 128), (128, 0, 128), (192, 192, 192), (128, 128, 128), (64, 64, 64), (255, 165, 0), (255, 192, 203), (75, 0, 130), (123, 104, 238), (255, 20, 147)]
         font = 1
         font_scale = 1.0
@@ -61,12 +67,18 @@ class UseModel:
             x, y, w, h = int(x), int(y), int(w), int(h)
             object_id = object.id
             confidence = object.score
+            confidence = round(confidence, 2)
             num = id_dict[object_id]
             
             
             color = colors[ind]
             cv2.rectangle(frame, (x, y), (w, h), color, 2)
-            texte = f'ind {num}'
+            texte = f'ind {num}_{confidence}'
+            if num not in self.result_track:
+                self.result_track[num] = []
+            else:
+                self.result_track[num].append(num_img)
+                
             p = [x, y-10]
             cv2.putText(frame, texte, p, font, font_scale, color, 1)
             
@@ -124,7 +136,22 @@ class UseModel:
         return id_dict, j
 
         
+    def get_results(self):
+        ind = self.result_track.keys()
+        print('total number of images :', self.total_frames)
+        num = range(self.total_frames)
+        num_no = []
+        for n in num:
+            if n not in ind:
+                num_no.append(n)
+                
+        print(len(num_no), ' images with no elephants')
         
+                
+        print('number of elephants detected ', len(ind))
+        for ind, val in self.result_track.items():
+            print(f'elephant n° {ind} : image {val[0]} - image {val[-1]}')
+    
 
 if __name__=='__main__':
     
