@@ -222,16 +222,26 @@ On constate déjà une nette amélioration avec une détection exacte des élép
 
 Le compte rendu du modèle se présente de la manière suivante :
 
-total number of images : 10
-nb of sequences with no elephants : [8, 9]
-number of elephants detected  8
-elephant n° 0 : image 1 - image 9
-elephant n° 1 : image 1 - image 9
-elephant n° 2 : image 1 - image 9
-elephant n° 3 : image 1 - image 9
-elephant n° 4 : image 1 - image 9
-elephant n° 5 : image 1 - image 9
-elephant n° 6 : image 1 - image 9
+total number of images : 10. 
+
+nb of sequences with no elephants : [8, 9]. 
+
+number of elephants detected  8. 
+
+elephant n° 0 : image 1 - image 9. 
+
+elephant n° 1 : image 1 - image 9. 
+
+elephant n° 2 : image 1 - image 9. 
+
+elephant n° 3 : image 1 - image 9. 
+
+elephant n° 4 : image 1 - image 9. 
+
+elephant n° 5 : image 1 - image 9. 
+
+elephant n° 6 : image 1 - image 9. 
+
 
 
 
