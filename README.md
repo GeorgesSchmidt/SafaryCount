@@ -15,20 +15,23 @@ Le programme aura comme sortie un compte rendu décrivant les séquences de cett
 
 - nb de séquences sans éléphants. 
 
-Pour les séquences avec des éléphants :  
 
-- séquence n°1 : 1 éléphant de l'image 10 à l'image 25. 
 
-- séquence n°4 : 6 éléphants de l'image 56 à l'image 156. 
+- séquence n°1 : film ne présentant pas d'éléphant (0 détections) de l'image 10 à l'image 25. 
+- séquence n°2 : film présentant 1 éléphant de l'image 10 à l'image 25. 
+- séquence n°3 : film présentant 6 éléphants de l'image 56 à l'image 156. 
 
+Le modèle doit reconnaitre cet animal dans un premier temps avant de le suivre (tracking) sur un intervalle de temps (d'images) donné. 
 
 # 1 : Utilisation de Yolo. 
 
-La version 8 de Yolo permet la détection d'animaux de la savanne tels que des giraffes, zèbres et éléphants. Il affiche sur l'image des rectangles de détection (Regions Of Interest ou ROIs) entourant les objects détectés. Chacune des détection est nommée par un identifiant de classe 'bird' et son score de confidence. 
+La version 8 de Yolo permet la détection d'animaux de la savanne tels que des giraffes, zèbres et éléphants. Il affiche sur l'image des rectangles de détection (Regions Of Interest ou ROIs) entourant les objects détectés. Chacune des détections est nommée par un identifiant de classe 'bird' et son score de confidence. 
 
 0 : person. 
 20 : éléphant. 
 34 : zebra. 
+
+La liste des objets reconnus par Yolo se trouve dans 'self.model.names'. Il s'agit d'un dictionnaire avec l'identifiant (le numéro) de la classe en key et l'étiquette de la classe (le nom ou label) dans les valeurs. 
 
 A chaque image, Yolo produit une détection de ce type : 5 éléphants, 3 trees, 1 laptop. 
 
@@ -47,29 +50,39 @@ Cette matrice compte les :
 
 - **True Positifs** : Yolo détecte un éléphant et il s'agit bien d'un éléphant. 
 - **False Positifs** : Yolo détecte un éléphant mais ce n'en est pas un. 
+
 Dans ces deux situations, Yolo affiche un rectangle de détection sur l'image (au moins 1 détection). 
 
 - **False Negatifs** : Yolo ne détecte pas d'éléphant alors qu'il y en a un.
 - **True Negatifs** : Yolo ne détecte pas d'éléphant et il n'y en a pas. 
+
 Dans ces deux situations, Yolo n'affiche pas de rectangle de détection (0 détections). 
 
-# 2 Ré-entrainement de Yolo : Data prepa. 
+# La préparation des données d'entrainement. 
 
 Comme la plupart des modèles d'IA, on peux ré-entrainer Yolo. Pour cela, il faut préalablement créer des données d'apprentissage. 
 Yolo est un réseaux de neurones qui prend en entrée des images. 
-Ces images sont classées dans 3 dossiers : **train**, **test** et **val**. 
+Ces images sont classées dans 3 dossiers : `train`, `test` et `val`. 
 Train et test sont les données qui serviront aux calculs du modèle (les epochs). 
-Val servira à l'évaluation du modèle : les résultats du dossier 'runs' fournit après entrainement (dont la matrice de confusion). 
+Val servira à l'évaluation du modèle : les résultats du dossier `runs` fournit après entrainement (dont la matrice de confusion). 
 
 On peux dans un premier tamps diviser le film en séquences :
 séquences avec des éléphants,
 séquences sans animaux.
 
-On lit ensuite ces séquences pour en sortir les images et les détections. Les détections sont des fichiers txt de ce type :
-20: c_x c_y w h. 
+On lit ensuite ces séquences pour en sortir les images et les détections. 
+Les détections données par Yolo sont les coordonnées des 2 points (supérieur gauche et inférieur droit) du rectangle de détection. 
+La donnée d'entrainement que l'on doit lui fournir présente une transformation de ce rectangle. 
+Les labels que l'on doit fournir à Yolo sont des fichiers txt de ce type :
+
+`0 0.53 0.47 0.22 0.1 = id c_x c_y w h`. 
+
 avec. 
-20: l'identifiant de la classe (éléphant). 
+
+id l'identifiant de la classe (son numéro). 
+
 c_x et c_y le centre du rectangle de détection. 
+
 w et h largeur et hauteur du rectangle. 
 
 Ces valeurs sont normalisées par rapport aux dimensions de l'image. 
@@ -79,16 +92,25 @@ On a donc ces couples :
 - image sans elephant et label txt vide. 
 
 
+
+
+
+
+
 ## Yolov8-seg. 
 Yolov8 permet la segmentation d'image : il donne les contours des animaux dans les prédictions. Ces masques sont des images binaires c'est-à-dire une image noire avec un seul éléphant (prediction) en blanc. S'il y a 5 éléphants dans l'image, alors il y aura 5 masks. 
 
 
 ![Elephants Image](elephants.jpg)
 
-Pour entrainer le modèle avec de la segmentation d'image, il faut créer des fichiers txt contenant les coordonnées des points des contours. Il aura donc ce format ;
-20: x0 y0 x1 y1 x2 y2 ...  
+Pour entrainer le modèle avec de la segmentation d'image, il faut créer des fichiers txt contenant les coordonnées des points des contours. 
 
-## Creation des données : le module createData.py. 
+Il aura donc ce format :  
+20: x0 y0 x1 y1 x2 y2 ...  
+Là encore ces coordonnées doivent être normalisées. 
+
+
+# 2 Creation des données : le module createData.py. 
 
 Ce module prend en entrée 2 films : l'un contenant au moins un éléphant dans toutes les images, l'autre ne contenant aucun animal dans toutes les images. 
 
@@ -105,7 +127,56 @@ animals = ['bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'z
 
 animal_numbers = [key for key, value in self.dict.items() if value in animals]. 
 
+
 '''
+
+Le module rempli les dossiers avec les couples images-labels. 
+
+Les labels du film ne présentant pas d'animaux existent mais sont vides. 
+
+Cela permet à Yolo d'apprendre ce que **n'est pas** un éléphant. 
+
+Les labels avec des éléphants porte l'identifiant de classe 0 car notre modèle n'est fait que pour reconnaitre des éléphants. 
+
+Il n'aura donc qu'une seule classe. 
+
+
+
+
+# 3 entreinament (deep learning) du modèle : le module createModel.py. 
+
+Lors de l'entrainement et la création de notre modèle d'IA, Yolo va créer un dossier 'runs' qui contient tous les entrainements effectués (ils sont numérotés). 
+Ces entrainement contiennent les modèles crées et leurs résultats (dont la matrice de confusion). 
+L'entrainement (les epochs) prend un certain temps qui dépend du nombre d'images d'entrainement (train et test). 
+
+Le module 'createModel.py' crée un fichier 'data.yaml' nécessaire à l'apprentissage de Yolo. 
+
+Ce fichier contient les chemins vers les données, le nombre de classe (ici 1) et l'étiquette de la classe (éléphant). 
+
+Après l'entrainement (le défilé des epochs), le programme stocke le nouveau modèle nommé 'elephant_nb_epochs.pt'. 
+
+Les résultats (performances) du nouveau modèle sont stockés dans le dossier 'runs'. 
+
+Ces résultats contiennent une série de graphiques dont la matrice de confusion. 
+
+Avec 3 épochs, la matrice de confusion est la suivante. 
+
+
+![Elephants Image](confusion_matrix_3_epochs.png)
+
+
+
+# 4 l'utilisation du modèle : le module useModel.py. 
+
+Ce module prend en entrée le nouveau modèle d'IA pour l'appliquer sur le film et obtenir le compte rendu attendu. 
+
+Le module utilisé ici est supervision afin d'utiliser ses options tels que l'affichage labelisé et le tracking, permettant de suivre chaque animal d'une séquence donnée. 
+
+Cette fois, l'input est le fim en entier (contenant des séquences avec et sans éléphants) ainsi que le nouveau modèle crée. 
+
+On constate déjà une nette amélioration avec une détection exacte des éléphants (ils ne sont plus confondus avec d'autres animaux) et aucune détection sur les séquences où il n'y a pas d'animaux. 
+
+
 
 
 

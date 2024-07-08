@@ -10,9 +10,12 @@ from tqdm import tqdm
 
 
 class TreatVideo:
-    def __init__(self, input_path, model) -> None:
-        self.path = input_path
-        self.model = YOLO(model)
+    def __init__(self, path_no, path_yes, model) -> None:
+        if model is not None:
+            self.model = YOLO(model)
+        else:
+            self.model = YOLO('yolov8s.pt')
+            
         self.bounding_box_annotator = sv.BoundingBoxAnnotator()
         self.label_annotator = sv.LabelAnnotator()
         self.mask_annotator = sv.MaskAnnotator(opacity=0.7)
@@ -77,24 +80,7 @@ class TreatVideo:
                 self.write_datas(frame, i)
                 boxes = self.get_predictions(frame)
                 if len(boxes) > 0:
-                    arr_count += 1
-                # for box in boxes:
-                #     x, y, w, h = box
-                #     cv2.rectangle(frame, (x, y), (w, h), (0, 255, 0), 2)
-                    
-                # p = [10, 20]
-                # texte = 'no detections'
-                
-                # if len(boxes) > 0:
-                #     texte = f'{len(boxes)} detections'
-                
-                # self.put_texte(frame, texte, p)
-                # title = f'image {i}'
-                # cv2.imshow(title, frame)
-                # key = cv2.waitKey(1)
-                # if key == 27:
-                #     break
-                
+                    arr_count += 1                
             pbar.update(1)
                 
         cap.release()
@@ -102,16 +88,7 @@ class TreatVideo:
     
         print('result ', arr_count, ' / ', self.total_frames)
        
-                
-    def put_texte(self, frame, texte, p):
-        font = 1
-        font_scale = 1.0
-        color = (0, 0, 0)
-        thick = 3
-        cv2.putText(frame, texte, p, font, font_scale, color, thick)
-        
-        
-        
+            
     
     def get_predictions(self, frame):
         results = self.model(frame, verbose=False)[0]
@@ -204,7 +181,8 @@ if __name__=='__main__':
     # args = parser.parse_args()
 
     #TreatVideo(input_path=args.input_path, model=args.model)
-    path = 'videos/elephant.mp4'
-    model = 'yolov8s.pt'
-    TreatVideo(input_path=path, model=model)
+    path_no = os.path.join(os.getcwd(), 'videos', 'no_elephant_1.mp4')
+    path_yes = os.path.join(os.getcwd(), 'videos', 'elephant_1.mp4')
+
+    TreatVideo(path_no, path_yes)
     

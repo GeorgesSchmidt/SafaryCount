@@ -7,7 +7,7 @@ import argparse
 
 
 class TrainModel:
-    def __init__(self, model, epochs=3) -> None:
+    def __init__(self, model, epochs=10) -> None:
         self.model = YOLO(model)
         self.create_yaml()
         self.deep_learning(epochs=epochs)
@@ -37,7 +37,7 @@ class TrainModel:
         results = self.model.train(data=datas, epochs=epochs, imgsz=320)
         result_dir = results.save_dir
         path = os.path.join(os.getcwd(), result_dir) + '/weights/best.pt'
-        title = os.getcwd() + f'/elephant_epochs_{epochs}.pt'
+        title = os.getcwd() + f'/elephant_epochs_retrained_10_{epochs}.pt'
         shutil.move(path, title)
     
 if __name__=='__main__':
@@ -50,4 +50,4 @@ if __name__=='__main__':
     # args = parser.parse_args()
 
     #TrainModel(model=args.model, epochs=args.epochs)
-    TrainModel(model='yolov8s.pt')
+    TrainModel(model='elephant_epochs_10.pt')
