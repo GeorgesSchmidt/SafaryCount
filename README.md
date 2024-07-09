@@ -243,6 +243,16 @@ elephant n° 5 : image 1 - image 9.
 elephant n° 6 : image 1 - image 9. 
 
 
+# 5 : évaluation visuelle du résultat  
+
+Si on regarde le film en appliquant notre nouveau modèle, on constate que, sur certaines images, tous les éléphants ne sont pas détectés.  
+
+Le ré-entrainement de Yolo, dans ce cas, ne fonctionnera pas puisque les données d'entrainement sont basées sur les prédictions faites par Yolo. 
+
+Pour contrer ce problème, on utilise la segmentation d'image.  
+
+En effet, la segmentation d'image crée les contours de tous les objets de l'image  
+
 
 
 

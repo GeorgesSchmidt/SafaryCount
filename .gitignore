@@ -3,6 +3,9 @@
 datas/
 runs/
 weights/
+segmentation/
 *.yaml
 *.log
+*.npy
+*.pth
 safari.mp4
