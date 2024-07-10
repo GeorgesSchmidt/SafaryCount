@@ -4,11 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ultralytics import YOLO
 import supervision as sv
+from ultralytics import SAM
 
 class DataSeg:
     def __init__(self, path) -> None:
         self.path = path
         self.model = YOLO('yolov8s-seg.pt')
+        self.sam = SAM('sam_b.pt')
         self.mask_annotator = sv.MaskAnnotator(opacity=1.0)
         self.read_movie()
         
@@ -19,13 +21,22 @@ class DataSeg:
         for i in range(total_frames):
             ret, frame = cap.read()
             if ret:
+                img = frame.copy()
                 self.treat_picture(frame)
-                cv2.imshow('', frame)
+                cv2.imshow(f'image {i}', frame)
                 key = cv2.waitKey(1)
                 if key == 27:
                     break
+                if i == 300:
+                    cv2.imwrite('el_lake.jpg', img)
         cap.release()
         cv2.destroyAllWindows()
+        
+        
+    def treat_picture1(self, frame):
+        frame = cv2.resize(frame, (100, 100))
+        h, w = frame.shape[:2]
+        results = self.sam(frame)[0]
         
     def treat_picture(self, frame):
         results = self.model(frame)[0]
@@ -39,6 +50,6 @@ class DataSeg:
     
         
 if __name__=='__main__':
-    path_video = os.path.join(os.getcwd(), 'videos', 'elephant_1.mp4')
+    path_video = os.path.join(os.getcwd(), 'videos', 'elephant.mp4')
     DataSeg(path_video)
         
