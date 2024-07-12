@@ -210,7 +210,7 @@ This module takes as input the new AI model to apply it on the movie and obtain 
 
 The module utilizes `supervision` to leverage its options such as labeled display and tracking, enabling the tracking of each animal in a given sequence.
 
-![Model Results](./pictures/model_results.png)
+![Model Results](./pictures/resultat_model.png)
 
 This time, the input is the entire movie (containing sequences with and without elephants) along with the newly created model.
 
