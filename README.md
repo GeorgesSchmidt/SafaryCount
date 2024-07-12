@@ -180,7 +180,7 @@ These results include a series of graphs, including the confusion matrix.
 
 As a reminder, this matrix is defined as:
 
-![Confusion Matrix](./pictures/confusion_matrix.jpeg)
+![Confusion Matrix](./pictures/matrice_confusion.jpeg)
 
 Ideally, the matrix should be diagonal.
 
