@@ -10,30 +10,26 @@ from tqdm import tqdm
 
 
 class TreatVideo:
-    def __init__(self, path_no, path_yes, model) -> None:
+    def __init__(self, path_no, path_yes, model=None) -> None:
         if model is not None:
             self.model = YOLO(model)
         else:
             self.model = YOLO('yolov8s.pt')
-            
-        self.bounding_box_annotator = sv.BoundingBoxAnnotator()
-        self.label_annotator = sv.LabelAnnotator()
-        self.mask_annotator = sv.MaskAnnotator(opacity=0.7)
-        self.dict = self.model.names
-        
+                    
         self.create_repo()
+        self.dict = self.model.names
+                
+        path_yes = os.path.join(os.getcwd(), 'videos', 'elephant_1.mp4')
+        self.elephant = True
+        print('with elephant')
+        self.treat_elephant(path_yes)
         
         path_no = os.path.join(os.getcwd(), 'videos', 'no_elephant_1.mp4')
         self.elephant = False
         print('no elephant')
-        self.treat_video(path_no)
-        
-        path_yes = os.path.join(os.getcwd(), 'videos', 'elephant_1.mp4')
-        self.elephant = True
-        print('with elephant')
-        self.treat_video(path_yes)
-        
-        self.check_datas()
+        self.treat_no_elephant(path_no)
+
+        self.write_datas()
         
         
     def create_repo(self):
@@ -63,32 +59,49 @@ class TreatVideo:
             except Exception as e:
                 print(f'Erreur lors de la suppression {file_path}. Raison: {e}')
 
-        
-    def treat_video(self, path):
+    def treat_elephant(self, path):
         cap = cv2.VideoCapture(path)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.dim = [width, height]
-        self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.total_frames -= 1
-        pbar = tqdm(total=self.total_frames, desc="Traitement des frames")
-        arr_count = 0
-        for i in range(self.total_frames):
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        num_images = np.random.randint(0, total_frames, size=300)
+        pbar = tqdm(total=len(num_images), desc="Traitement des images elephant")
+        self.img_el, self.label_el = [], []
+        for i in num_images:
             cap.set(cv2.CAP_PROP_POS_FRAMES, i)
             ret, frame = cap.read()
             if ret:
-                self.write_datas(frame, i)
                 boxes = self.get_predictions(frame)
                 if len(boxes) > 0:
-                    arr_count += 1                
+                    self.img_el.append(frame)
+                    self.label_el.append(boxes)
+                    
             pbar.update(1)
-                
         cap.release()
         pbar.close()
-    
-        print('result ', arr_count, ' / ', self.total_frames)
-       
             
+        
+    
+                
+    def treat_no_elephant(self, path):
+        cap = cv2.VideoCapture(path)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        num_images = np.random.randint(0, total_frames, size=len(self.img_el))
+        pbar = tqdm(total=len(self.img_el), desc="Traitement des images")
+        self.img_no_el, self.label_no_el = [], []
+        for i in num_images:
+            ret, frame = cap.read()
+            if ret:
+                self.img_no_el.append(frame)
+                self.label_no_el.append([])
+                if len(self.img_no_el) == len(self.img_el):
+                    break
+            pbar.update(1)
+        cap.release()
+        pbar.close()
+                
+                
     
     def get_predictions(self, frame):
         results = self.model(frame, verbose=False)[0]
@@ -107,15 +120,74 @@ class TreatVideo:
                 res.append(box)
         return res
     
-    def write_datas(self, frame, num):
+    def write_datas(self):
+        print('datas elephants', len(self.img_el), len(self.label_el))
+        print('datas no el', len(self.img_no_el), len(self.label_no_el))
+        n0 = int(len(self.img_el)/3)
+        n1 = int((2*len(self.img_el))/3)
+        print("dim", n0, n1)
+        
+        directory = os.path.join(os.getcwd(), 'datas')
+        
+        img_el, img_no_el = self.img_el[:n0], self.img_no_el[:n0]
+        label = self.label_el[:n0]
+        path = os.path.join(directory, 'train')
+        self.write_file(path, img_el, img_no_el, label)
+        
+        img_el, img_no_el = self.img_el[n0:n1], self.img_no_el[n0:n1]
+        label = self.label_el[n0:n1]
+        path = os.path.join(directory, 'test')
+        self.write_file(path, img_el, img_no_el, label)
+        
+        img_el, img_no_el = self.img_el[n1:], self.img_no_el[n1:]
+        label = self.label_el[n1:]
+        path = os.path.join(directory, 'val')
+        self.write_file(path, img_el, img_no_el, label)
+        
+        
+
+                
+    def write_file(self, path, img_el, img_no_el, label):
+        width, height = self.dim
+        for img, lab in zip(img_el, label):
+            t = uuid.uuid4().hex[:6]
+            title = f'elephant_{t}.png'
+            title = os.path.join(path, title)
+            cv2.imwrite(title, img)
+            title = f'elephant_{t}.txt'
+            title = os.path.join(path, title)
+            with open(title, 'w') as f:
+                for box in lab:
+                    x0, y0, x1, y1 = box
+                    c_x = np.mean([x0, x1])/width
+                    c_y = np.mean([y0, y1])/height
+                    w = (x1-x0)/width
+                    h = (y1-y0)/height
+                    c_x, c_y = round(c_x, 2), round(c_y, 2)
+                    w, h = round(w, 2), round(h, 2)
+                    line = f'0 {c_x} {c_y} {w} {h}\n'
+                    f.write(line)
+                    
+        for img in img_no_el:
+            t = uuid.uuid4().hex[:6]
+            title = f'no_elephant_{t}.png'
+            title = os.path.join(path, title)
+            cv2.imwrite(title, img)
+            title = f'no_elephant_{t}.txt'
+            title = os.path.join(path, title)
+            with open(title, 'w') as f:
+                pass
+        
+    
+    def write_datas1(self, frame, num):
         directory = os.path.join(os.getcwd(), 'datas')
         
         sub_direct = ''
-        if num <= 0.7*self.total_frames:
+        if num <= 100:
             sub_direct = 'train'
-        if num > 0.7*self.total_frames and num < 0.85*self.total_frames:
+        if num > 100 and num < 200:
             sub_direct = 'test'
-        if num > 0.85*self.total_frames:
+        if num > 200:
             sub_direct = 'val'
 
 
@@ -152,7 +224,7 @@ class TreatVideo:
                 
     def check_datas(self):
         directory = os.path.join(os.getcwd(), 'datas')
-        sub_dir = os.listdir(directory)
+        sub_dir = ['train', 'test', 'val']
         n = 0
         nb = 0
         print(sub_dir)

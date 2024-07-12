@@ -3,6 +3,8 @@
 datas/
 runs/
 weights/
+files/
+segmentation/
 *.yaml
 *.log
 safari.mp4

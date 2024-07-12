@@ -157,5 +157,5 @@ if __name__=='__main__':
     
     path = os.path.join(os.getcwd(), 'videos', 'elephant.mp4')
 
-    model = os.path.join(os.getcwd(), 'elephant_epochs_retrained_10_10.pt')
+    model = os.path.join(os.getcwd(), './weights/yolo_lr_10.pt')
     UseModel(model=model, video_path=path)
