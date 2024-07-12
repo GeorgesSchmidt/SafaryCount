@@ -28,31 +28,30 @@ class TrainModel:
         train_path = os.path.join(os.getcwd(), 'datas/train')
         test_path = os.path.join(os.getcwd(), 'datas/test')
         valid_path = os.path.join(os.getcwd(), 'datas/val')
+        
         data_yaml_content = f"""
         train: {train_path}
         test: {test_path}
         val: {valid_path}
 
         nc: 1
+        
         names:
             0: elephant
         """
-
-        # Écrire le contenu dans le fichier data.yaml
-        title = os.path.join(os.getcwd(), 'data.yaml')
-        with open(title, 'w') as f:
+        
+        with open('data.yaml', 'w') as f:
             f.write(data_yaml_content)
-
         print('data.yaml created')
         
     def deep_learning(self, epochs=5, datas='data.yaml'):
-        results = self.model.train(data=datas, epochs=epochs, imgsz=320)
+        results = self.model.train(data=datas, epochs=epochs, imgsz=320, lr0=0.01, lrf=0.1)
         result_dir = results.save_dir
         path = os.path.join(os.getcwd(), result_dir) + '/weights/best.pt'
-        title = os.getcwd() + f'/weights/elephant_epochs_retrained_10_{epochs}.pt'
+        title = os.getcwd() + f'/weights/yolo_lr_{epochs}.pt'
         shutil.move(path, title)
         path = os.path.join(os.getcwd(), result_dir) + '/confusion_matrix.png'
-        title = os.getcwd() + f'/results/confusion_matrix_elephant_epochs_retrained_10_{epochs}.png'
+        title = os.getcwd() + f'confusion_matrix_yolo_lr_{epochs}.png'
     
 if __name__=='__main__':
     # parser = argparse.ArgumentParser(description='Creation model elephant')
@@ -64,4 +63,4 @@ if __name__=='__main__':
     # args = parser.parse_args()
 
     #TrainModel(model=args.model, epochs=args.epochs)
-    TrainModel(model='weights/elephant_epochs_10.pt')
+    TrainModel(model='yolov8s.pt')
