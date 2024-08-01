@@ -16,8 +16,8 @@ class Contours:
             cap.set(cv2.CAP_PROP_POS_FRAMES, i)
             ret, frame = cap.read()
             if ret:
-                #frame = self.treat_image(frame, 2)
-                frame = self.get_contours(frame)
+                frame = self.treat_image(frame, 2)
+                #frame = self.get_contours(frame)
                 cv2.imshow('', frame)
                 key = cv2.waitKey(1)
                 if key == 27:
@@ -41,5 +41,5 @@ class Contours:
         
       
 if __name__=='__main__':
-    path = './videos/elephant_1.mp4'
+    path = '../videos/elephant.mp4'
     Contours(path)

@@ -3,7 +3,8 @@
 datas/
 runs/
 weights/
-segmentation/
+segment-anything/
+files/
 *.yaml
 *.log
 *.npy

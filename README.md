@@ -43,7 +43,7 @@ sur environnement virtuel.
 
 `python3 useModel.py --video_path videos/elephant.mp4`. 
 
-Dans ce cas, le module télé-chargera automatiquement le modèle Yolov8s. 
+Dans ce cas, le module télé-chargera automatiquement le modèle Yolov8s lors de la première utilisation et apparaitra dans ce projet (fichier `yolov8s.pt`). 
 
 ou.  
 
@@ -175,7 +175,7 @@ Lors de l'entrainement et la création de notre modèle d'IA, Yolo va créer un 
 Ces entrainement contiennent les modèles crées et leurs résultats (dont la matrice de confusion). 
 L'entrainement (les epochs) prend un certain temps qui dépend du nombre d'images d'entrainement (train et test). 
 
-Le module 'createModel.py' crée un fichier 'data.yaml' nécessaire à l'apprentissage de Yolo et un dossier `weights` qui contient les différents modèles crées pour comparatif de résultats ainsi qu'un dossier `results` qui contient les matrices de confusion de chaque modèle. 
+Le module `createModel.py` crée un fichier `data.yaml` nécessaire à l'apprentissage de Yolo et un dossier `weights` qui contient les différents modèles crées pour comparatif de résultats ainsi qu'un dossier `results` qui contient les matrices de confusion de chaque modèle. 
 
 Ce fichier contient les chemins vers les données, le nombre de classe (ici 1) et l'étiquette de la classe (éléphant). 
 
@@ -204,8 +204,11 @@ En résultat, on aura un modèle qui aura appris sur 20 epochs et qui donne la m
 
 On constate que le modèle apprend mieux au fur et à mesure des épochs. 
 
+Toutefois, la matrice de confusion n'est pas diagonale comme cela devrait être le cas pour un modèle performant. 
 
+Ce nouveau modèle n'arrive pas bien à distinguer les éléphants (les animaux) de l'arrière plan (background). 
 
+On va toutefois l'appliquer afin d'évaluer visualemment le résultat. 
 
 
 # 4 l'utilisation du modèle : le module useModel.py. 
@@ -251,8 +254,25 @@ Le ré-entrainement de Yolo, dans ce cas, ne fonctionnera pas puisque les donné
 
 Pour contrer ce problème, on utilise la segmentation d'image.  
 
-En effet, la segmentation d'image crée les contours de tous les objets de l'image  
+En effet, la segmentation d'image crée les contours de tous les objets de l'image. 
 
+Pour trouver des contours qui n'ont pas été détectés par Yolo, on utilise le module `Segment Anything Model`, appelé SAM. 
+
+La détection des contours par SAM est longue, car il détecte et entoure tous les objets d'une image. 
+
+On appliquera donc ce modèle sur quelques images afin de réduire le temps de calcul. 
+
+Cela dit, les résultats seront sauvegardés dans un dossier, on pourra donc compléter ce dossier au besoin. 
+
+Pour l'exemple, nous prendrons l'image du film où les éléphants sont dans un lac. 
+
+
+![Elephants Image](./pictures/elephant_lake.png)
+
+
+En appliquant SAM, on obtient :
+
+![Elephants Image](./pictures/elephant_lake_result_sam.png)
 
 
 

@@ -1,9 +1,0 @@
-
-        train: /Users/georgesschmidt/VisualCodeProjects/SafaryCount/datas/train
-        test: /Users/georgesschmidt/VisualCodeProjects/SafaryCount/datas/test
-        val: /Users/georgesschmidt/VisualCodeProjects/SafaryCount/datas/val
-
-        nc: 1
-        names:
-            0: elephant
-        
