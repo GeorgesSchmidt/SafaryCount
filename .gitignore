@@ -1,12 +1,9 @@
 .venv
 *.pt
-datas/
+Datas/
 runs/
-weights/
-segment-anything/
-files/
-*.yaml
-*.log
+Weights/
+
 *.npy
 *.pth
 safari.mp4
