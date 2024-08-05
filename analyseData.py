@@ -96,8 +96,6 @@ class Analyse:
         plt.tight_layout()  # Ajuster la mise en page pour éviter les chevauchements
         #plt.show()
         plt.savefig('Pictures/detect_animals.png')
- 
-
         
             
     def read_file(self, path):
